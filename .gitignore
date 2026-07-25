@@ -1,0 +1,7 @@
+/.direnv
+result
+.lake
+
+# examples/* are intentionally left unlocked -- see comment in
+# examples/minimal/flake.nix.
+examples/*/flake.lock

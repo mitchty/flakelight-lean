@@ -1,0 +1,62 @@
+* flakelight-lean
+
+Lean 4 module for [[https://github.com/nix-community/flakelight][flakelight]].
+
+Simply wraps [[https://github.com/lenianiva/lean4-nix][lean4-nix]] with ~readToolchainFile~ + ~lake2nix~ to get a
+declarative, pinned Lean/Lake build via flakelight.
+
+** Requirements
+
+Your project must have ~lean-toolchain~ and ~lake-manifest.json~ files committed to
+at least the index. If they are not there then this will fail at build time.
+
+~lake-manifest.json~ can be generated via ~lake update~ as a reminder.
+
+Either one of ~lakefile.toml~ or ~lakefile.lean~ is supported as the project config
+file.
+
+** Options
+
+~fileset~ configures the fileset the package is built with. By default it
+includes all ~*.lean~ files, ~lake-manifest.json~, ~lean-toolchain~, and
+whichever of ~lakefile.toml/lakefile.lean~ is present in the index.
+
+~lean.target~ lets you manually set the Lake build target name for
+~lake2nix.mkPackage~. Override this if the name in the lakefile present doesn't
+match ~pname~
+
+** Flake Example
+
+You can call this flake directly:
+
+#+begin_src nix
+{
+  inputs.flakelight-lean.url = "github:mitchty/flakelight-lean";
+  outputs = { flakelight-lean, ... }: flakelight-lean ./. { };
+}
+#+end_src
+
+Alternatively, add this module to an existing flakelight config:
+
+#+begin_src nix
+{
+  inputs = {
+    flakelight.url = "github:nix-community/flakelight";
+    inputs.flakelight-lean.url = "github:mitchty/flakelight-lean";
+  };
+  outputs = { flakelight, flakelight-lean, ... }: flakelight ./. {
+    imports = [ flakelight-lean.flakelightModules.default ];
+  };
+}
+#+end_src
+
+Note you can always test against a local clone/checkout via:
+
+#+begin_src sh
+nix build --override-input flakelight-lean path:/absolute/path/to/flakelight-lean --no-write-lock-file
+#+end_src
+
+** Example project / CI abusage
+
+~examples/minimal~ is a minimal consumer of this module mostly so that the github
+action in ~.github/workflows/ci.yaml~ can validate that nothing breaks over time.

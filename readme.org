@@ -25,6 +25,12 @@ whichever of ~lakefile.toml/lakefile.lean~ is present in the index.
 ~lake2nix.mkPackage~. Override this if the name in the lakefile present doesn't
 match ~pname~
 
+~lean.binary~ controls if lean4-nix fetches a prebuilt Lean binary
+toolchain iff ~true~ or builds Lean from source ~false~. Defaults to ~null~,
+which tries to auto detect. Aka: binary toolchains everywhere but darwin.
+
+Ref [[https://github.com/lenianiva/lean4-nix/issues/76]] for further details.
+
 ** Flake Example
 
 You can call this flake directly:

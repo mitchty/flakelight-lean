@@ -72,13 +72,44 @@ in
         Use this to specify the name if the auto detection is wrong, probably best to always set this.
       '';
     };
+
+    lean.binary = mkOption {
+      type = lib.types.nullOr lib.types.bool;
+      default = null;
+      description = ''
+        If lean4-nix's `readToolchainFile` fetches a prebuilt Lean
+        binary toolchain aka `binary = true` or build Lean from source
+        when `binary = false`.
+
+        Defaults to `null`, which auto-detects per system: binary toolchains are
+        used everywhere except Darwin. On Darwin, `install_name_tool` cannot
+        relink the prebuilt `libleanshared_1.dylib` because its Mach-O load
+        commands don't have enough headerpad space, so the binary toolchain
+        build fails during `fixupPhase`. See
+        https://github.com/lenianiva/lean4-nix/issues/76. Setting to true will
+        cause that platform to build from scratch too.
+      '';
+    };
   };
 
   config = mkMerge [
     (mkIf hasLakefile {
       pname = mkDefault (if lakefileName != null then lakefileName else "lean-package");
 
-      withOverlays = assertPinned [ (inputs.lean4-nix.readToolchainFile toolchainFile) ];
+      withOverlays = assertPinned [
+        (
+          final: prev:
+          let
+            binary =
+              if config.lean.binary != null then config.lean.binary else !prev.stdenv.hostPlatform.isDarwin;
+            toolchainOverlay = inputs.lean4-nix.readToolchainFile {
+              toolchain = toolchainFile;
+              inherit binary;
+            };
+          in
+          toolchainOverlay final prev
+        )
+      ];
 
       package =
         { callPackage, defaultMeta }:

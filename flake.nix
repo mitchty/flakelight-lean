@@ -3,11 +3,6 @@
 
 {
   description = "Lean 4 module for flakelight";
-  inputs = {
-    flakelight.url = "github:nix-community/flakelight";
-    lean4-nix.url = "github:lenianiva/lean4-nix";
-    flakelight-treefmt.url = "github:m15a/flakelight-treefmt";
-  };
   inputs.flakelight-treefmt.inputs.flakelight.follows = "flakelight";
 
   outputs =
@@ -16,12 +11,30 @@
       flakelight,
       lean4-nix,
       flakelight-treefmt,
+      flakelight-mitchty,
       ...
     }:
+    let
+      treefmtDefaults = {
+        imports = [
+          flakelight-treefmt.flakelightModules.default
+          flakelight-mitchty.flakelightModules.default
+        ];
+        treefmtConfig = {
+          programs.prettier.enable = true;
+          programs.taplo.enable = true;
+
+          settings.global.excludes = [
+            "lake-manifest.json"
+            "*.lean"
+          ];
+        };
+      };
+    in
     flakelight ./. {
       imports = [
         flakelight.flakelightModules.extendFlakelight
-        flakelight-treefmt.flakelightModules.default
+        treefmtDefaults
       ];
       inputs.self = self;
       nixDir = ./.;
@@ -36,24 +49,22 @@
       ];
 
       flakelightModule = { lib, ... }: {
-        imports = [ ./flakelight-lean.nix ];
-        inputs.lean4-nix = lib.mkDefault lean4-nix;
-      };
-
-      treefmtConfig = {
-        programs.nixfmt.enable = true;
-        programs.deadnix.enable = true;
-        programs.statix.enable = true;
-        programs.prettier.enable = true;
-        programs.taplo.enable = true;
-
-        settings.global.excludes = [
-          "*/flake.lock"
-          "*/lake-manifest.json"
-          "*.lean"
+        imports = [
+          ./flakelight-lean.nix
+          treefmtDefaults
         ];
+        inputs.lean4-nix = lib.mkDefault lean4-nix;
       };
 
       devShell.packages = pkgs: [ pkgs.nixd ];
     };
+  inputs = {
+    flakelight.url = "github:nix-community/flakelight";
+    lean4-nix.url = "github:lenianiva/lean4-nix";
+    flakelight-treefmt.url = "github:m15a/flakelight-treefmt";
+    flakelight-mitchty = {
+      url = "github:mitchty/flakelight-mitchty";
+      inputs.flakelight.follows = "flakelight";
+    };
+  };
 }
